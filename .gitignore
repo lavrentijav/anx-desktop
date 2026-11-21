@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# Local API references (not part of the repository)
+/api/
+
+# Local-only anti-tamper implementation derived outside the clean room.
+# Tracked replacement is planned in tasks/07-anti-tamper-user-apk.md.
+src/anx_desktop/api/antitamper.py
+src/anx_desktop/api/_media_basis.py
+tests/api/test_antitamper.py
+api/references/notes/antitamper.md
+api/references/notes/tools/
+
+# Local editor index and runtime data
+.pyatlas/
+session.json
+*.sqlite
+*.sqlite3
+*.sqlite3-*

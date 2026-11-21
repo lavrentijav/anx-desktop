@@ -1,0 +1,51 @@
+name: Nuitka builds
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            executable: anx-desktop
+          - os: windows-2022
+            executable: anx-desktop.exe
+          - os: macos-15
+            executable: anx-desktop
+    runs-on: ${{ matrix.os }}
+    env:
+      PYTHONPATH: src
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Qt system dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libxkbcommon-x11-0 libxcb-cursor0 libpulse0 ffmpeg
+      - run: python -m pip install '.[dev,release]'
+      - run: python -m pytest -q
+      - name: Build
+        run: >-
+          python -m nuitka --mode=standalone --enable-plugin=pyside6
+          --include-qt-plugins=sensible,multimedia
+          --include-data-files=src/anx_desktop/ui/resources/ui-8.5-tokens.json=anx_desktop/ui/resources/ui-8.5-tokens.json
+          --include-data-dir=src/anx_desktop/ui/resources/anime4k=anx_desktop/ui/resources/anime4k
+          --nofollow-import-to=anx_desktop.api.antitamper
+          --output-dir=dist --output-filename=${{ matrix.executable }}
+          --assume-yes-for-downloads src/anx_desktop/__main__.py
+      - name: Smoke-test bundle
+        shell: bash
+        run: cd dist && ./__main__.dist/${{ matrix.executable }} --smoke-test
+      - name: Archive bundle (preserve permissions and symlinks)
+        run: tar -czf dist/anx-desktop-${{ matrix.os }}-${{ runner.arch }}.tar.gz -C dist __main__.dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: anx-desktop-${{ matrix.os }}-${{ runner.arch }}
+          path: dist/anx-desktop-*.tar.gz
+          if-no-files-found: error
